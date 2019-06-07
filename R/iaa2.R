@@ -84,7 +84,7 @@
 
 
 
-iaa <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,nColleges), s.prefs=NULL, c.prefs=NULL,short_match = TRUE, seed = NULL){
+iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,nColleges), s.prefs=NULL, c.prefs=NULL,short_match = TRUE, seed = NULL){
   if(!is.null(seed)){
     set.seed(seed)
   }
@@ -114,94 +114,88 @@ iaa <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,n
   iter <- 0
   
   s.hist    <- rep(0,length=nStudents)  # current college
-  c.hist    <- lapply(nSlots, function(x) rep(0,length=x))  # current students
+  c.hist    <- rep(0,length=nColleges)  #number of proposals made
+  c.slots   <- lapply(nSlots, function(x) rep(0,length=x))  # current students
+  c.vacant  <- 1:nColleges 
   s.singles <- 1:nStudents
-  c.singles <- 1:nColleges
-  
-  s.mat <- matrix(data=1:nStudents,nrow=nStudents,ncol=nColleges,byrow=F)
-  
-  while(min(c.hist[c.singles]) > 0){  # there are as many rounds as maximal preference orders
-    # look at market: all unassigned students
-    # if history not full (been rejected by all colleges in his prefs)
-    # look at unassigned students' history
-    # propose to next college on list
+
+  while(min(c.hist[c.vacant]) < nStudents){
+    # look at market: all unfilled colleges
+    # if history not full (been rejected by all students in their prefs)
+    # look at unfilled colleges' history
+    # propose to next n students on list
+    # while n is the number of free places at the college
     iter         <- iter + 1
-    offers       <- NULL
+    offers       <- list()
     
-    ## Look at unassigned students that have not yet applied to all colleges
-    temp.singles <- c(na.omit( s.singles[s.hist[s.singles] < nColleges] ))
-    if(length(temp.singles)==0){ # if unassigned students have used up all their offers: stop
-      return(finish(s.prefs,c.prefs,iter,c.hist,s.singles,short_match))
+    ## Look at unfilled colleges that have not yet applied to all students
+    temp.colleges <- c(na.omit( c.vacant[c.hist[c.vacant] < nStudents] ))
+    if(length(temp.colleges)==0){ # if unassigned students have used up all their offers: stop
+      return(finish(s.prefs,c.prefs,iter,s.hist,s.singles,c.vacant,short_match))
     }
     
     ## Add to students' offer history
-    for(i in 1:length(temp.singles)){
-      s.hist[temp.singles[i]] <- s.hist[temp.singles[i]] + 1  # set history of student i one up.
-      if(s.hist[temp.singles[i]] > nColleges){   # Skip student if he has already applied to all colleges
+    for(i in 1:length(temp.colleges)){
+      # calculate number of offers from minimum out of vacant places and number of students the college had not yet proposed to.
+      numoffers <- min(sum(c.slots[[temp.colleges[i]]] == 0), nStudents - c.hist[temp.colleges[i]])
+      if(numoffers <= 0){   # Skip college if it has already applied to all students
         next()
       }
-      offers[i] <- s.prefs[s.hist[temp.singles[i]],temp.singles[i]]  # offer if unassigned i is index of current round college
+      oldhist <- c.hist[temp.colleges[i]]
+      c.hist[temp.colleges[i]] <- oldhist + numoffers  # set history of college i one up.
+      offers[[i]] <- c.prefs[(oldhist+1):c.hist[temp.colleges[i]],temp.colleges[i]]  # offer if unassigned i is index of current round college
     }
     
     ##print(paste("Iteration: ",iter))
-    approached <- unique(offers)	# index of colleges who received offers
+    approached <- unique(unlist(offers))	# index of students who received offers
     
     # Dont approach college 0 since it means that the student prefers to stay unmatched
     approached <- approached[!approached == 0]
     
-    s.singles  <- sort(s.singles[!s.singles %in% temp.singles])  # reset unassigned students, except for singles who already used up all offers
+    c.slots  <- mapply(sort,c.slots)  # TODO reset unassigned students, except for singles who already used up all offers
     
     for(j in approached){
-      all_proposers   <- temp.singles[offers==j]
-      proposers   <- c.prefs[,j][c.prefs[,j] %in% all_proposers]  # Only keep proposers that are ranked by the approached college
-      not_ranked <-  all_proposers[!all_proposers %in% proposers] # Students that are not ranked remain single
-      stay.single <- temp.singles[offers==0 | is.na(offers)]	# students who prefer remaining unassigned at current history
+      all_proposers   <- temp.colleges[sapply(offers, function(x){j %in% x})]
+
+      curr = s.hist[j]
       
-      for (k in 1:length(proposers)){
+      relevant_proposers = union(c(curr),all_proposers)
+      sorted_proposers = s.prefs[s.prefs[,j] %in% relevant_proposers,j]
+      best = sorted_proposers[1]
+      
+      if (curr != best) { # if best proposer is different to current held offer, switch to better college
+        s.hist[j] <- best
+        s.singles = s.singles[s.singles != j] # permanently remove student j from singles
+        if (curr != 0) {
+          c.slots <- mapply(function(x){replace(x,x==j,0)},c.slots)
+        }
+      
+        c.slots[[best]][1] = j # add student to list of new college
+        c.slots  <- mapply(sort,c.slots)  # reset slot order after changes
         
-        # Gale-Shapley:
-          #          if(0 %in% c.hist[[j]] && any(c.prefs[ ,j]==proposers[k])){  # if no history and proposer is on preference list
-          if(0 %in% c.hist[[j]] && !is.na(any(c.prefs[ ,j]==proposers[k])) && any(c.prefs[ ,j]==proposers[k])){  # if no history and proposer is on preference list
-            
-            #c.hist[[j]][c.hist[[j]]==0][1] <- proposers[k]			  # then accept
-            c.hist[[j]][match(0, c.hist[[j]])] <- proposers[k]
-            
-          } else{
-            # Compare prosposing student to the students that currently hold an offer
-            eval_prop  <- proposer_better(proposer = proposers[k], prefs =  c.prefs, college = j, hist = c.hist)
-            
-            # If the proposing student is not preferred, reject him
-            if(is.na(eval_prop$better) || eval_prop$better == FALSE){
-              s.singles <- c(s.singles,proposers[k])	# otherwise k stays unassigned
-            } else{ # Otherwise assign him to the seat, that is currently holded by the least preferred student, who becomes unassigned again
-              s.singles <- c(s.singles, eval_prop$worst_stud)
-              c.hist[[j]][eval_prop$index_worst_stud] <- proposers[k]
-              
-            }
-          }
       }
-      s.singles <- sort(unique(c(s.singles,stay.single, not_ranked))) #Update singles in every round
+      c.vacant <- (1:nColleges)[sapply(c.slots, function(x){0 %in% x})]
     }
     
-    if(length(s.singles)==0){	# if no unassigned students left: stop
+    if(length(c.vacant)==0){	# if no unassigned students left: stop
       #current.match <- sapply(1:nColleges, function(x) s.mat[,x] %in% c.hist[[x]])
       
-      return(finish(s.prefs,c.prefs,iter,c.hist,s.singles,short_match))
+      return(finish(s.prefs,c.prefs,iter,s.hist,s.singles,c.vacant,short_match))
     }
-    current.match <- sapply(1:nColleges, function(x) s.mat[,x] %in% c.hist[[x]])
+    #current.match <- sapply(1:nColleges, function(x) s.mat[,x] %in% c.hist[[x]])
   }
-  return(finish(s.prefs,c.prefs,iter,c.hist,s.singles,short_match))
+  return(finish(s.prefs,c.prefs,iter,s.hist,s.singles,c.vacant,short_match))
 }
 
 
 # To Sum up and format the output
-finish <- function(s.prefs,c.prefs,iter,c.hist,s.singles,short_match){
+finish <- function(s.prefs,c.prefs,iter,s.hist,s.singles,c.vacant,short_match){
   if(short_match == FALSE){
-    return(list(s.prefs=s.prefs,c.prefs=c.prefs,iterations=iter,matchings=edgefun(x=c.hist),singles=s.singles))
+    return(list(s.prefs=s.prefs,c.prefs=c.prefs,iterations=iter,matchings=edgefun(x=s.hist),singles=s.singles, vacant=c.vacant))
   }
   else {
     # Format matching
-    matching <- edgefun(x=c.hist)
+    matching <- edgefun(x=s.hist)
     
     free_caps <- lapply(1:ncol(c.prefs), function(col){
       return(nrow(matching[matching$college == col & matching$student == 0,]))
@@ -210,26 +204,17 @@ finish <- function(s.prefs,c.prefs,iter,c.hist,s.singles,short_match){
     colnames(free_caps) <- 1:ncol(c.prefs)
     
     matching <- matching[matching$student != 0, ]
-    return(list(s.prefs=s.prefs,c.prefs=c.prefs,iterations=iter,matchings=matching,singles=s.singles, free_cap = free_caps))
+    return(list(s.prefs=s.prefs,c.prefs=c.prefs,iterations=iter,matchings=matching,singles=s.singles, vacant=c.vacant, free_cap = free_caps))
   }
 }
 
 ## convert match matrix to edgelist
 edgefun <- function(x){
-  res <- data.frame(college = c(unlist( sapply(1:length(x), function(i){
+  res <- data.frame(student = c(unlist( sapply(1:length(x), function(i){
     rep(i,length(x[[i]]))
   }) )),
-  student = unlist(x),
+  college = unlist(x),
   stringsAsFactors = FALSE)
   #browser()
   res <- with(res, res[order(college, student),])
-}
-
-## Compare proposer and current students
-proposer_better <- function(proposer, prefs, college, hist){
-  rank_proposer <- match(proposer, prefs[, college])
-  rank_students <- match(hist[[college]], prefs[, college])
-  #index_worst_stud = which.max(rank_students
-  #hist[[college]][which.max(rank_students)]
-  return(list(better = any(rank_proposer < rank_students), worst_stud = hist[[college]][which.max(rank_students)], index_worst_stud = which.max(rank_students)))
 }
