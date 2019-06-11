@@ -114,12 +114,12 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
   iter <- 0
   
   s.hist    <- rep(0,length=nStudents)  # current college
-  c.hist    <- rep(0,length=nColleges)  #number of proposals made
+  c.hist    <- lapply(nSlots, function(x) list())  # student id, which received an offer
   c.slots   <- lapply(nSlots, function(x) rep(0,length=x))  # current students
   c.vacant  <- 1:nColleges 
   s.singles <- 1:nStudents
 
-  while(min(c.hist[c.vacant]) < nStudents){
+  while(Reduce(min,lapply(c.hist[c.vacant],length)) < nStudents){
     # look at market: all unfilled colleges
     # if history not full (been rejected by all students in their prefs)
     # look at unfilled colleges' history
@@ -129,7 +129,7 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
     offers       <- list()
     
     ## Look at unfilled colleges that have not yet applied to all students
-    temp.colleges <- c(na.omit( c.vacant[c.hist[c.vacant] < nStudents] ))
+    temp.colleges <- c(na.omit( c.vacant[lapply(c.hist[c.vacant], length) < nStudents] ))
     if(length(temp.colleges)==0){ # if unassigned students have used up all their offers: stop
       return(finish(s.prefs,c.prefs,iter,s.hist,s.singles,c.vacant,short_match))
     }
@@ -137,13 +137,14 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
     ## Add to students' offer history
     for(i in 1:length(temp.colleges)){
       # calculate number of offers from minimum out of vacant places and number of students the college had not yet proposed to.
-      numoffers <- min(sum(c.slots[[temp.colleges[i]]] == 0), nStudents - c.hist[temp.colleges[i]])
+      offerstsofar <- length(c.hist[[temp.colleges[i]]])
+      numoffers <- min(sum(c.slots[[temp.colleges[i]]] == 0), nStudents - offerstsofar)
       if(numoffers <= 0){   # Skip college if it has already applied to all students
         next()
       }
-      oldhist <- c.hist[temp.colleges[i]]
-      c.hist[temp.colleges[i]] <- oldhist + numoffers  # set history of college i one up.
-      offers[[i]] <- c.prefs[(oldhist+1):c.hist[temp.colleges[i]],temp.colleges[i]]  # offer if unassigned i is index of current round college
+      newoffers = c.prefs[(offerstsofar+1):(offerstsofar+numoffers),temp.colleges[i]]
+      c.hist[[temp.colleges[i]]] <- union(newoffers, c.hist[[temp.colleges[i]]])  # add new offers to history of college i.
+      offers[[i]] <- newoffers  # offer if unassigned i is index of current round college
     }
     
     ##print(paste("Iteration: ",iter))
