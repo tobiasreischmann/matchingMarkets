@@ -175,7 +175,27 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     iterations = 0
 
     repeat {
+      if (!is.null(matching)) {
+        x <- matrix(1:nColleges,ncol = nStudents, nrow=nColleges)
+        deleteablestudents <- lapply(1:nStudents,function(y) {
+          curr <- matching[matching$student == y,]$college
+          if (curr == 0) {
+            return(list())
+            break;
+          }
+          temp <- x[s.prefs == curr][y]
+          if (temp < nColleges) {
+            s.prefs[temp:nColleges,y]
+          } else {
+            list()
+          }
+        })
+      }
       for(x in c.private) {
+        if (!is.null(matching)) {
+          delete <- (1:nStudents)[unlist(lapply(1:nStudents, function(i) {x %in% deleteablestudents[[i]]}))]
+          temp.c.prefs[[x]] = setdiff(temp.c.prefs[[x]],delete)
+        }
         temp <- temp.c.prefs[[x]][1:nSlots[x]]
         c.prefs[,x] <- append(unlist(temp), rep(0, nStudents-length(temp)))
         temp.c.prefs[[x]] <- setdiff(temp.c.prefs[[x]], c.prefs[,x])
