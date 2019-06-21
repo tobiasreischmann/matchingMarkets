@@ -84,7 +84,9 @@
 
 
 
-iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,nColleges), s.prefs=NULL, c.prefs=NULL,short_match = TRUE, seed = NULL){
+iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,nColleges), 
+                 s.prefs=NULL, c.prefs=NULL,short_match = TRUE, seed = NULL, c.hist = NULL,
+                 matching=NULL){
   if(!is.null(seed)){
     set.seed(seed)
   }
@@ -113,11 +115,24 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
   
   iter <- 0
   
-  s.hist    <- rep(0,length=nStudents)  # current college
-  c.hist    <- lapply(nSlots, function(x) list())  # student id, which received an offer
-  c.slots   <- lapply(nSlots, function(x) rep(0,length=x))  # current students
-  c.vacant  <- 1:nColleges 
-  s.singles <- 1:nStudents
+  if(is.null(matching)){
+    s.hist    <- rep(0,length=nStudents)  # current college
+    c.hist    <- lapply(nSlots, function(x) list())  # student id, which received an offer
+    c.slots   <- lapply(nSlots, function(x) rep(0,length=x))  # current students
+    c.vacant  <- 1:nColleges 
+    s.singles <- 1:nStudents
+  } else {
+    c.slots   <- lapply(1:nColleges, function(i) {
+      students = matching[matching$college == i,]$student
+      union(students, rep(0,length=nSlots[i] - length(students)))
+    })  # current students
+    c.vacant  <- (1:nColleges)[sapply(c.slots, function(x){0 %in% x})]
+    s.singles <- matching[matching$college == 0,]$student
+    s.hist    <- matching[order(matching$student),]$college  # current college
+    c.hist    <- lapply(1:nColleges, function(x) {
+                    worstcurrentlyheld <- max((1:nStudents)[c.prefs[,x] %in% c.slots[[x]]])
+                    c.prefs[1:worstcurrentlyheld,x]})  # student id, which received an offer
+  }
 
   while(Reduce(min,lapply(c.hist[c.vacant],length)) < nStudents){
     # look at market: all unfilled colleges
