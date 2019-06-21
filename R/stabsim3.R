@@ -64,7 +64,7 @@
 #' 
 stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots, 
                      colleges, students, colleges_fun, students_fun, outcome, selection, 
-                     binary=FALSE, seed=123, verbose=TRUE){
+                     binary=FALSE, seed=123, verbose=TRUE, private_college_quota = 0.0){
 
   set.seed(seed)
   
@@ -83,7 +83,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
   # all players in the market.
   
   stabsim3_inner <- function(mi, nStudents, nColleges=length(nSlots), nSlots, colleges, students, colleges_fun, students_fun,
-                             outcome, selection, selection.student, selection.college){
+                             outcome, selection, selection.student, selection.college, private_college_quota = 0.0){
 
     ## unique student and college ids
     uColleges <- 1:nColleges
@@ -162,8 +162,31 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     c.prefs <- apply(-1*c.prefs, 2, order)
     s.prefs <- apply(-1*s.prefs, 2, order)
     
-    ## obtain student-optimal matching
-    matching <- iaa2(s.prefs=s.prefs, c.prefs=c.prefs, nSlots=nSlots)$matchings
+    c.vacant = 1:nColleges
+    matching = NULL
+    c.private = sample(1:nColleges, nColleges * private_college_quota)
+    temp.c.prefs = lapply(1:nColleges, function(x) {
+      if (x %in% c.private){
+        c.prefs[,x]
+      } else {
+        list()
+      }})
+
+    iterations = 0
+
+    repeat {
+      for(x in c.private) {
+        temp <- temp.c.prefs[[x]][1:nSlots[x]]
+        c.prefs[,x] <- append(unlist(temp), rep(0, nStudents-length(temp)))
+        temp.c.prefs[[x]] <- setdiff(temp.c.prefs[[x]], c.prefs[,x])
+      }
+      ## obtain student-optimal matching
+      iterations <- iterations + 1
+      matching <- iaa2(s.prefs=s.prefs, c.prefs=c.prefs, nSlots=nSlots,matching = NULL)$matchings
+      if(length(c.private) == 0 ||
+         length(setdiff(c.vacant,c.private)) == 0 ||
+         max(unlist(lapply(temp.c.prefs,length))) == 0)  break;
+    }
     if("sOptimal" %in% colnames(matching)){
       matching <- matching[matching$sOptimal==1,]
     }
@@ -226,7 +249,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       X <- stabsim3_inner(mi=i, nStudents=nStudents, nSlots=nSlots, 
                           colleges=colleges, students=students, colleges_fun=colleges_fun, students_fun=students_fun,
                           outcome=outcome, selection=selection,
-                          selection.student=selection.student, selection.college=selection.college)  
+                          selection.student=selection.student, selection.college=selection.college, private_college_quota = private_college_quota)  
       RETURN$OUT[[i]]  <- X$OUT
       RETURN$SELs[[i]] <- X$SELs
       RETURN$SELc[[i]] <- X$SELc
@@ -248,7 +271,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       X <- stabsim3_inner(mi=i, nStudents=nStudents, nSlots=nSlots, 
                           colleges=colleges, students=students, colleges_fun=colleges_fun, students_fun=students_fun,
                           outcome=outcome, selection=selection,
-                          selection.student=selection.student, selection.college=selection.college)  
+                          selection.student=selection.student, selection.college=selection.college, private_college_quota = private_college_quota)  
       RETURN$OUT[[i]] <- X$OUT
       RETURN$SEL[[i]] <- X$SEL
       if(verbose==TRUE){

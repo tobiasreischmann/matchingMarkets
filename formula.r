@@ -15,4 +15,4 @@ stabsim3(m=1, nStudents=3, nSlots=c(2,3,5), verbose=FALSE,
 	 outcome = ~ I(sqrt((cx-sx)**2 + (cy-sy)**2)), 
 	 selection = c(
 		       student = ~ I(idist * sqrt((cx-sx)**2 + (cy-sy)**2)) + I(iopen * opening),
-		       colleges = ~ I(age/20) + I(sqrt((cx-sx)**2 + (cy-sy)**2))))
+		       colleges = ~ I(age/20) + I(sqrt((cx-sx)**2 + (cy-sy)**2))),private_college_quota = .5)
