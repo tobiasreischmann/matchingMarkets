@@ -222,7 +222,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       
       SELs <- cbind(m.id=mi, Vs=Vs[indx], Smtch[indx,], addvars, indices[indx,])
       
-      list(OUT=OUT, SELc=SELc, SELs=SELs)
+      list(OUT=OUT, SELc=SELc, SELs=SELs, iterations=iterations)
             
     } else if(method == "Sorensen"){
       
@@ -238,7 +238,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
   
   if(method == "Klein"){
     
-    RETURN <- list(OUT=list(), SELs=list(), SELc=list())
+    RETURN <- list(OUT=list(), SELs=list(), SELc=list(), iterations=list())
     
     cat("Generating data for", m, "matching markets...","\n")
     if(verbose==TRUE){
@@ -256,6 +256,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       if(verbose==TRUE){
         setTxtProgressBar(pb, i/m)
       }
+      RETURN$iterations[[i]] <- X$iterations
     }
        
   } else if(method == "Sorensen"){
