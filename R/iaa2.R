@@ -144,7 +144,7 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
     offers       <- list()
     
     ## Look at unfilled colleges that have not yet applied to all students
-    temp.colleges <- c(na.omit( c.vacant[lapply(c.hist[c.vacant], length) < nStudents] ))
+    temp.colleges <- c(na.omit( c.vacant[unlist(lapply(c.vacant, function(x) length(c.hist[[x]]) < sum(c.prefs[,x] != 0)))] ))
     if(length(temp.colleges)==0){ # if unassigned students have used up all their offers: stop
       return(finish(s.prefs,c.prefs,iter,s.hist,s.singles,c.vacant,short_match))
     }
