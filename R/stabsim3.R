@@ -162,50 +162,59 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     c.prefs <- apply(-1*c.prefs, 2, order)
     s.prefs <- apply(-1*s.prefs, 2, order)
     
-    c.vacant = 1:nColleges
     matching = NULL
     c.private = sample(1:nColleges, nColleges * private_college_quota)
     temp.c.prefs = lapply(1:nColleges, function(x) {
-      if (x %in% c.private){
-        c.prefs[,x]
-      } else {
-        list()
-      }})
+      c.prefs[,x]
+    })
 
     iterations = 0
 
     repeat {
       if (!is.null(matching)) {
-        x <- matrix(1:nColleges,ncol = nStudents, nrow=nColleges)
-        deleteablestudents <- lapply(1:nStudents,function(y) {
+        # Remove all students from temp preference lists, which already hold a better offer.
+        deleteablestudents <- sapply(1:nStudents,function(y) {
           curr <- matching[matching$student == y,]$college
           if (curr == 0) {
             return(list())
             break;
           }
-          temp <- x[s.prefs == curr][y]
+          temp <- match(curr,s.prefs[,y])
           if (temp < nColleges) {
             s.prefs[temp:nColleges,y]
           } else {
             list()
           }
         })
-      }
-      for(x in c.private) {
-        if (!is.null(matching)) {
-          delete <- (1:nStudents)[unlist(lapply(1:nStudents, function(i) {x %in% deleteablestudents[[i]]}))]
-          temp.c.prefs[[x]] = setdiff(temp.c.prefs[[x]],delete)
+        for (s in 1:nStudents) {
+          for (x in deleteablestudents[[s]]) {
+            temp.c.prefs[[x]] = setdiff(temp.c.prefs[[x]],c(s))
+          }
         }
-        temp <- temp.c.prefs[[x]][1:nSlots[x]]
-        c.prefs[,x] <- append(unlist(temp), rep(0, nStudents-length(temp)))
-        temp.c.prefs[[x]] <- setdiff(temp.c.prefs[[x]], c.prefs[,x])
       }
-      ## obtain student-optimal matching
+      # Create new preference lists for private facilities.
+      c.prefs = sapply(1:nColleges, function(x) {
+        if (x %in% c.private){
+          temp <- temp.c.prefs[[x]][1:nSlots[x]]
+          append(unlist(temp), rep(0, nStudents-length(temp)))
+        } else {
+          temp <- temp.c.prefs[[x]]
+          append(unlist(temp), rep(0, nStudents-length(temp)))
+      }})
+      
+      # Reduce the temp preference lists for private facilities by the offers made.
+      for (x in c.private) {
+        temp.c.prefs[[x]] = setdiff(temp.c.prefs[[x]], c.prefs[,x])
+      }
+      
+      ## obtain college-optimal matching
       iterations <- iterations + 1
-      matching <- iaa2(s.prefs=s.prefs, c.prefs=c.prefs, nSlots=nSlots,matching = NULL)$matchings
+      result <- iaa2(s.prefs=s.prefs, c.prefs=c.prefs, nSlots=nSlots,matching = matching)
+      matching <- result$matchings
+      # Run as long as there are private facilities left, which can place offers.
       if(length(c.private) == 0 ||
-         length(setdiff(c.vacant,c.private)) == 0 ||
-         max(unlist(lapply(temp.c.prefs,length))) == 0)  break;
+         length(union(result$vacant,c.private)) == 0 ||
+         max(unlist(lapply(temp.c.prefs[c.private],length))) == 0)  break;
     }
     if("sOptimal" %in% colnames(matching)){
       matching <- matching[matching$sOptimal==1,]

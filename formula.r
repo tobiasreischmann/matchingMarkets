@@ -7,7 +7,18 @@ category <- function(c) {
   }
 }
 
-stabsim3(m=1, nStudents=3, nSlots=c(2,3,5), verbose=FALSE, 
+nStudents <- 200
+nColleges <- 40
+mean <- nStudents/nColleges
+sd <- mean/2
+
+capacityfun <- function(n, mean, sd=1) {
+  sapply(round(rnorm(n, mean=mean, sd=sd)), function(x) max(1,x))
+}
+nSlots <- capacityfun(nColleges, mean, sd)
+sum(nSlots)
+profvis({
+stabsim3(m=1, nStudents=nStudents, nSlots=nSlots, verbose=FALSE, 
 	 colleges = c("cx","cy","opening"), 
 	 students = c("sx", "sy", "idist", "iopen", "age"),
 	 colleges_fun = c(equaldist,equaldist,category(2)), 
@@ -15,4 +26,5 @@ stabsim3(m=1, nStudents=3, nSlots=c(2,3,5), verbose=FALSE,
 	 outcome = ~ I(sqrt((cx-sx)**2 + (cy-sy)**2)), 
 	 selection = c(
 		       student = ~ I(idist * sqrt((cx-sx)**2 + (cy-sy)**2)) + I(iopen * opening),
-		       colleges = ~ I(age/20) + I(sqrt((cx-sx)**2 + (cy-sy)**2))),private_college_quota = .5)
+		       colleges = ~ I(age/20) + I(sqrt((cx-sx)**2 + (cy-sy)**2))),private_college_quota = 0.1)
+})

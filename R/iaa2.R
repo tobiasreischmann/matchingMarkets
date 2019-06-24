@@ -126,12 +126,14 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
       students = matching[matching$college == i,]$student
       union(students, rep(0,length=nSlots[i] - length(students)))
     })  # current students
+    c.slots  <- mapply(sort,c.slots)
     c.vacant  <- (1:nColleges)[sapply(c.slots, function(x){0 %in% x})]
     s.singles <- matching[matching$college == 0,]$student
     s.hist    <- matching[order(matching$student),]$college  # current college
-    c.hist    <- lapply(1:nColleges, function(x) {
-                    worstcurrentlyheld <- max((1:nStudents)[c.prefs[,x] %in% c.slots[[x]]])
-                    c.prefs[1:worstcurrentlyheld,x]})  # student id, which received an offer
+    c.hist    <- lapply(nSlots, function(x) list())  # student id, which received an offer
+    #c.hist    <- lapply(1:nColleges, function(x) {
+    #                worstcurrentlyheld <- max((1:nStudents)[c.prefs[,x] %in% c.slots[[x]]])
+    #                c.prefs[1:worstcurrentlyheld,x]})  # student id, which received an offer
   }
 
   while(Reduce(min,lapply(c.hist[c.vacant],length)) < nStudents){
@@ -168,8 +170,6 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
     # Dont approach college 0 since it means that the student prefers to stay unmatched
     approached <- approached[!approached == 0]
     
-    c.slots  <- mapply(sort,c.slots)  # TODO reset unassigned students, except for singles who already used up all offers
-    
     for(j in approached){
       all_proposers   <- temp.colleges[sapply(offers, function(x){j %in% x})]
 
@@ -183,15 +183,17 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
         s.hist[j] <- best
         s.singles = s.singles[s.singles != j] # permanently remove student j from singles
         if (curr != 0) {
-          c.slots <- mapply(function(x){replace(x,x==j,0)},c.slots)
+          c.slots[[curr]] <- replace(c.slots[[curr]],c.slots[[curr]]==j,0)
+          c.slots[[curr]]  <- sort(c.slots[[curr]])
         }
       
         c.slots[[best]][1] = j # add student to list of new college
-        c.slots  <- mapply(sort,c.slots)  # reset slot order after changes
-        
+        c.slots[[best]]  <- sort(c.slots[[best]])  # reset slot order after changes
       }
-      c.vacant <- (1:nColleges)[sapply(c.slots, function(x){0 %in% x})]
     }
+    c.vacant <- (1:nColleges)[sapply(c.slots, function(x) head(x, n=1) == 0)]
+    #c.vacant <- (1:nColleges)[sapply(c.slots, function(x){0 %in% x})]
+    
     
     if(length(c.vacant)==0){	# if no unassigned students left: stop
       #current.match <- sapply(1:nColleges, function(x) s.mat[,x] %in% c.hist[[x]])
