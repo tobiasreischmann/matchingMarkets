@@ -216,10 +216,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
          length(union(result$vacant,c.private)) == 0 ||
          max(unlist(lapply(temp.c.prefs[c.private],length))) == 0)  break;
     }
-    if("sOptimal" %in% colnames(matching)){
-      matching <- matching[matching$sOptimal==1,]
-    }
-    
+
     ## obtain equilibrium identifier 'd'
     matching$id <- paste(matching$college, matching$student, sep="_")
     indices$id  <- paste(indices$c.id, indices$s.id, sep="_")
