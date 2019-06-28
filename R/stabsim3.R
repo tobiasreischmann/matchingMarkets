@@ -229,8 +229,8 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       matching <- result$matchings
       # Run as long as there are private facilities left, which can place offers.
       if(length(c.private) == 0 ||
-         length(union(result$vacant,c.private)) == 0 ||
-         max(unlist(lapply(temp.c.prefs[c.private],length))) == 0)  break;
+         length(intersect(result$vacant,c.private)) == 0 ||
+         max(unlist(lapply(temp.c.prefs[intersect(result$vacant,c.private)],length))) == 0)  break;
     }
 
     ## obtain equilibrium identifier 'd'
