@@ -191,28 +191,41 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
         })
         for (s in 1:nStudents) {
           for (x in deleteablestudents[[s]]) {
-            temp.c.prefs[[x]] = list.remove(temp.c.prefs[[x]],s)
+            temp.c.prefs[[x]] <- temp.c.prefs[[x]][temp.c.prefs[[x]]!=s]
           }
         }
       }
       # Create new preference lists for private facilities.
-      c.prefs = sapply(1:nColleges, function(x) {
+      curr.c.prefs = sapply(1:nColleges, function(x) {
         if (x %in% c.private){
-          temp <- temp.c.prefs[[x]][1:nSlots[x]]
-          append(unlist(temp), rep(0, nStudents-length(temp)))
+          slots <- min(nSlots[x] - sum(matching$college==x), length(temp.c.prefs[[x]]))
+          if (slots > 0) {
+            temp <- temp.c.prefs[[x]][1:slots]
+          } else {
+            temp <- list()
+          }
+          if (nStudents > length(temp)) {
+            append(unlist(temp), rep(0, nStudents-length(temp)))
+          } else {
+            unlist(temp)
+          }
         } else {
           temp <- temp.c.prefs[[x]]
-          append(unlist(temp), rep(0, nStudents-length(temp)))
+          if (nStudents > length(temp)) {
+            append(unlist(temp), rep(0, nStudents-length(temp)))
+          } else {
+            unlist(temp)
+          }
       }})
       
       # Reduce the temp preference lists for private facilities by the offers made.
       for (x in c.private) {
-        temp.c.prefs[[x]] = setdiff(temp.c.prefs[[x]], c.prefs[,x])
+        temp.c.prefs[[x]] = setdiff(temp.c.prefs[[x]], curr.c.prefs[,x])
       }
       
       ## obtain college-optimal matching
       iterations <- iterations + 1
-      result <- iaa2(s.prefs=s.prefs, c.prefs=c.prefs, nSlots=nSlots,matching = matching)
+      result <- iaa2(s.prefs=s.prefs, c.prefs=curr.c.prefs, nSlots=nSlots,matching = matching)
       matching <- result$matchings
       # Run as long as there are private facilities left, which can place offers.
       if(length(c.private) == 0 ||
