@@ -248,7 +248,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       
       SELs <- cbind(m.id=mi, Vs=Vs[indx], Smtch[indx,], addvars, indices[indx,])
       
-      list(OUT=OUT, SELc=SELc, SELs=SELs, iterations=iterations)
+      list(OUT=OUT, SELc=SELc, SELs=SELs, iterations=iterations, c.prefs=c.prefs, s.prefs=s.prefs)
             
     } else if(method == "Sorensen"){
       
@@ -279,6 +279,8 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       RETURN$OUT[[i]]  <- X$OUT
       RETURN$SELs[[i]] <- X$SELs
       RETURN$SELc[[i]] <- X$SELc
+      RETURN$c.prefs[[i]] <- X$c.prefs
+      RETURN$s.prefs[[i]] <- X$s.prefs
       if(verbose==TRUE){
         setTxtProgressBar(pb, i/m)
       }
