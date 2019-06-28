@@ -157,6 +157,7 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
       offerstsofar <- length(c.hist[[temp.colleges[i]]])
       numoffers <- min(sum(c.slots[[temp.colleges[i]]] == 0), nStudents - offerstsofar)
       if(numoffers <= 0){   # Skip college if it has already applied to all students
+        offers[[i]] <- list()
         next()
       }
       newoffers = c.prefs[(offerstsofar+1):(offerstsofar+numoffers),temp.colleges[i]]
@@ -170,8 +171,19 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
     # Dont approach college 0 since it means that the student prefers to stay unmatched
     approached <- approached[!approached == 0]
     
+    # Group offers by approached student.
+    offersbyapproached <- list()
     for(j in approached){
-      all_proposers   <- temp.colleges[sapply(offers, function(x){j %in% x})]
+      offersbyapproached[[j]] <- list()
+      }
+    for (i in 1:length(temp.colleges)) {
+      for (o in offers[[i]]) {
+        offersbyapproached[[o]] <- append(offersbyapproached[[o]], temp.colleges[i])
+      }
+    }
+
+    for(j in approached){
+      all_proposers <- offersbyapproached[[j]]
 
       curr = s.hist[j]
       
