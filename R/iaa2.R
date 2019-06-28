@@ -127,7 +127,7 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
       union(students, rep(0,length=nSlots[i] - length(students)))
     })  # current students
     c.slots  <- mapply(sort,c.slots)
-    c.vacant  <- (1:nColleges)[sapply(c.slots, function(x){0 %in% x})]
+    c.vacant <- (1:nColleges)[lapply(c.slots, `[[`, 1) == 0]
     s.singles <- matching[matching$college == 0,]$student
     s.hist    <- matching[order(matching$student),]$college  # current college
     c.hist    <- lapply(nSlots, function(x) list())  # student id, which received an offer
@@ -203,10 +203,8 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
         c.slots[[best]]  <- sort(c.slots[[best]])  # reset slot order after changes
       }
     }
-    c.vacant <- (1:nColleges)[sapply(c.slots, function(x) head(x, n=1) == 0)]
-    #c.vacant <- (1:nColleges)[sapply(c.slots, function(x){0 %in% x})]
-    
-    
+    c.vacant <- (1:nColleges)[lapply(c.slots, `[[`, 1) == 0]
+
     if(length(c.vacant)==0){	# if no unassigned students left: stop
       #current.match <- sapply(1:nColleges, function(x) s.mat[,x] %in% c.hist[[x]])
       
