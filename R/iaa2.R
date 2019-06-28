@@ -136,7 +136,7 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
     #                c.prefs[1:worstcurrentlyheld,x]})  # student id, which received an offer
   }
 
-  while(Reduce(min,lapply(c.hist[c.vacant],length)) < nStudents){
+  while(length(c.vacant)>0 && Reduce(min,lapply(c.hist[c.vacant],length)) < nStudents){
     # look at market: all unfilled colleges
     # if history not full (been rejected by all students in their prefs)
     # look at unfilled colleges' history
