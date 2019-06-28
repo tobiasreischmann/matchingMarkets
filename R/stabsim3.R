@@ -89,6 +89,9 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     uColleges <- 1:nColleges
     uStudents <- 1:nStudents
     
+    ## reduce slots sizes to number of students
+    nSlots[nSlots > nStudents] <- nStudents
+
     ## all feasible combinations
     combs <- function(uColleges, uStudents){
       data.frame( c.id = c(sapply(uColleges, function(i){ rep(i, nStudents) })), 
