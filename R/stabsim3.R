@@ -169,7 +169,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     })
 
     iterations = 0
-
+    library(rlist)
     repeat {
       if (!is.null(matching)) {
         # Remove all students from temp preference lists, which already hold a better offer.
@@ -188,7 +188,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
         })
         for (s in 1:nStudents) {
           for (x in deleteablestudents[[s]]) {
-            temp.c.prefs[[x]] = setdiff(temp.c.prefs[[x]],c(s))
+            temp.c.prefs[[x]] = list.remove(temp.c.prefs[[x]],s)
           }
         }
       }
