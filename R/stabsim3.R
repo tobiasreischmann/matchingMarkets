@@ -325,11 +325,11 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     }
   }
   
-  RETURN <- lapply(RETURN, function(i){
-    h <- do.call(rbind,i)
-    rownames(h) <- 1:dim(h)[1]
-    h
-  })
+  #RETURN <- lapply(RETURN, function(i){
+  #  h <- do.call(rbind,i)
+  #  rownames(h) <- 1:dim(h)[1]
+  #  h
+  #})
   
   if(binary == TRUE){
     RETURN$OUT$y <- ifelse(RETURN$OUT$y > median(RETURN$OUT$y), 1, 0)
