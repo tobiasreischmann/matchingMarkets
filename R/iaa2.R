@@ -178,7 +178,9 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
       }
     for (i in 1:length(temp.colleges)) {
       for (o in offers[[i]]) {
-        offersbyapproached[[o]] <- append(offersbyapproached[[o]], temp.colleges[i])
+        if (o != 0) {
+          offersbyapproached[[o]] <- append(offersbyapproached[[o]], temp.colleges[i])
+        }
       }
     }
 
