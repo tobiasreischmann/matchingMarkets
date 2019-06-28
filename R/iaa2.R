@@ -123,8 +123,8 @@ iaa2 <- function(nStudents=ncol(s.prefs), nColleges=ncol(c.prefs), nSlots=rep(1,
     s.singles <- 1:nStudents
   } else {
     c.slots   <- lapply(1:nColleges, function(i) {
-      students = matching[matching$college == i,]$student
-      union(students, rep(0,length=nSlots[i] - length(students)))
+      students <- matching[matching$college == i,]$student
+      append(students, rep(0,length=nSlots[i] - length(students)))
     })  # current students
     c.slots  <- mapply(sort,c.slots)
     c.vacant <- (1:nColleges)[lapply(c.slots, `[[`, 1) == 0]
