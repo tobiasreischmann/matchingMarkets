@@ -172,7 +172,9 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       c.prefs[,x]
     })
 
-    iterations = 0
+    iterationscount = 0
+    maxassignments = min(sum(nSlots),nStudents)
+    matchings = list()
     library(rlist)
     repeat {
       if (!is.null(matching)) {
@@ -226,14 +228,29 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       }
       
       ## obtain college-optimal matching
-      iterations <- iterations + 1
       result <- iaa2(s.prefs=s.prefs, c.prefs=curr.c.prefs, nSlots=nSlots,matching = matching)
+      ## compare new matching to old iteration
+      iterationscount <- iterationscount + 1
       matching <- result$matchings
+      matchings[[iterationscount]] <- matching
       # Run as long as there are private facilities left, which can place offers.
       if(length(c.private) == 0 ||
          length(intersect(result$vacant,c.private)) == 0 ||
          max(unlist(lapply(temp.c.prefs[intersect(result$vacant,c.private)],length))) == 0)  break;
     }
+
+    iterations = list(occupied=list(), unchanged=list(), altered=list(), new=list())
+
+    for (i in c(1:iterationscount)) {
+      othermatching <- matchings[[i]]
+      merged <- merge(othermatching[othermatching$college != 0,], matching[matching$college != 0,], by=c('student'), all=TRUE)
+      iterations$occupied[[i]] = length(othermatching[othermatching$college != 0,1])/maxassignments
+      iterations$unchanged[[i]] = sum(merged$college.x == merged$college.y, na.rm = TRUE)/maxassignments
+      iterations$new[[i]] = sum(is.na(merged$college.x))/maxassignments
+      iterations$altered[[i]] = sum(merged$college.x != merged$college.y, na.rm = TRUE)/maxassignments
+    }
+
+    iterations <- as.data.frame(lapply(iterations, unlist))
 
     ## obtain equilibrium identifier 'd'
     matching$id <- paste(matching$college, matching$student, sep="_")
