@@ -64,7 +64,7 @@
 #' 
 stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots, 
                      colleges, students, colleges_fun, students_fun, outcome, selection, 
-                     binary=FALSE, seed=123, verbose=TRUE, private_college_quota = 0.0){
+                     binary=FALSE, seed=123, verbose=TRUE, private_college_quota = 0.0, count.waitinglist = function(x) {x}){
 
   set.seed(seed)
   
@@ -83,7 +83,8 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
   # all players in the market.
   
   stabsim3_inner <- function(mi, nStudents, nColleges=length(nSlots), nSlots, colleges, students, colleges_fun, students_fun,
-                             outcome, selection, selection.student, selection.college, private_college_quota = 0.0){
+                             outcome, selection, selection.student, selection.college, private_college_quota = 0.0,
+                             count.waitinglist){
 
     ## unique student and college ids
     uColleges <- 1:nColleges
@@ -198,7 +199,8 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       # Create new preference lists for private facilities.
       curr.c.prefs = sapply(1:nColleges, function(x) {
         if (x %in% c.private){
-          slots <- min(nSlots[x] - sum(matching$college==x), length(temp.c.prefs[[x]]))
+          extensionofslots <- count.waitinglist(nSlots[x] - sum(matching$college==x))
+          slots <- min(extensionofslots, length(temp.c.prefs[[x]]))
           if (slots > 0) {
             temp <- temp.c.prefs[[x]][1:slots]
           } else {
@@ -291,7 +293,9 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       X <- stabsim3_inner(mi=i, nStudents=nStudents, nSlots=nSlots, 
                           colleges=colleges, students=students, colleges_fun=colleges_fun, students_fun=students_fun,
                           outcome=outcome, selection=selection,
-                          selection.student=selection.student, selection.college=selection.college, private_college_quota = private_college_quota)  
+                          selection.student=selection.student, selection.college=selection.college, 
+                          private_college_quota = private_college_quota,
+                          count.waitinglist = count.waitinglist)  
       RETURN$OUT[[i]]  <- X$OUT
       RETURN$SELs[[i]] <- X$SELs
       RETURN$SELc[[i]] <- X$SELc
@@ -316,7 +320,9 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
       X <- stabsim3_inner(mi=i, nStudents=nStudents, nSlots=nSlots, 
                           colleges=colleges, students=students, colleges_fun=colleges_fun, students_fun=students_fun,
                           outcome=outcome, selection=selection,
-                          selection.student=selection.student, selection.college=selection.college, private_college_quota = private_college_quota)  
+                          selection.student=selection.student, selection.college=selection.college, 
+                          private_college_quota = private_college_quota,
+                          count.waitinglist = count.waitinglist)  
       RETURN$OUT[[i]] <- X$OUT
       RETURN$SEL[[i]] <- X$SEL
       if(verbose==TRUE){
