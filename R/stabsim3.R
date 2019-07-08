@@ -64,7 +64,8 @@
 #' 
 stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots, 
                      colleges, students, colleges_fun, students_fun, outcome, selection, 
-                     binary=FALSE, seed=123, verbose=TRUE, private_college_quota = 0.0, count.waitinglist = function(x) {x}){
+                     binary=FALSE, seed=123, verbose=TRUE, private_college_quota = 0.0, count.waitinglist = function(x) {x},
+                     s.prefs.count = NULL){
 
   set.seed(seed)
   
@@ -84,7 +85,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
   
   stabsim3_inner <- function(mi, nStudents, nColleges=length(nSlots), nSlots, colleges, students, colleges_fun, students_fun,
                              outcome, selection, selection.student, selection.college, private_college_quota = 0.0,
-                             count.waitinglist){
+                             count.waitinglist, s.prefs.count){
 
     ## unique student and college ids
     uColleges <- 1:nColleges
@@ -167,10 +168,29 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     s.prefs <- apply(-1*s.prefs, 2, order)
     
     matching = NULL
+    
+    ## Choose random subset of colleges as private colleges
     c.private = sample(1:nColleges, nColleges * private_college_quota)
+    
+    ## Temporary matrix to store the set of students, to whom no offer has been sent to, yet.
     temp.c.prefs = lapply(1:nColleges, function(x) {
       c.prefs[,x]
     })
+    
+    ## Reduce the preference sets of students and colleges
+    if (!is.null(s.prefs.count)) {
+      s.prefs[(s.prefs.count+1):nColleges,] <- 0
+      ratedcolleges <- sapply(1:nColleges,function(y) {
+          (1:nStudents)[sapply(1:nStudents,function(x) {
+            y %in% s.prefs[,x]
+          })]
+      })
+      temp.c.prefs <- sapply(1:nColleges,function(y) {
+        intersect(temp.c.prefs[[y]],ratedcolleges[[y]])
+      })
+    } else {
+      s.prefs.count <- nColleges
+    }
 
     iterationscount = 0
     maxassignments = min(sum(nSlots),nStudents)
@@ -186,8 +206,8 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
             break;
           }
           temp <- match(curr,s.prefs[,y])
-          if (temp < nColleges) {
-            s.prefs[temp:nColleges,y]
+          if (temp < s.prefs.count) {
+            s.prefs[temp:s.prefs.count,y]
           } else {
             list()
           }
@@ -312,7 +332,8 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
                           outcome=outcome, selection=selection,
                           selection.student=selection.student, selection.college=selection.college, 
                           private_college_quota = private_college_quota,
-                          count.waitinglist = count.waitinglist)  
+                          count.waitinglist = count.waitinglist,
+                          s.prefs.count = s.prefs.count)  
       RETURN$OUT[[i]]  <- X$OUT
       RETURN$SELs[[i]] <- X$SELs
       RETURN$SELc[[i]] <- X$SELc
@@ -339,7 +360,8 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
                           outcome=outcome, selection=selection,
                           selection.student=selection.student, selection.college=selection.college, 
                           private_college_quota = private_college_quota,
-                          count.waitinglist = count.waitinglist)  
+                          count.waitinglist = count.waitinglist,
+                          s.prefs.count = s.prefs.count)  
       RETURN$OUT[[i]] <- X$OUT
       RETURN$SEL[[i]] <- X$SEL
       if(verbose==TRUE){
