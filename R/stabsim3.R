@@ -170,7 +170,11 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     matching = NULL
     
     ## Choose random subset of colleges as private colleges
-    c.private = sample(1:nColleges, nColleges * private_college_quota)
+    if("private" %in% colnames(C)) {
+      c.private <- (1:nColleges)[C$private == 1]
+    } else {
+      c.private <- sample(1:nColleges, nColleges * private_college_quota)
+    }
     
     ## Temporary matrix to store the set of students, to whom no offer has been sent to, yet.
     temp.c.prefs = lapply(1:nColleges, function(x) {
