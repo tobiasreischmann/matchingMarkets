@@ -6,4 +6,5 @@
 *.png
 *.pdf
 *.so
-.Rproj
+*.Rproj
+*.tar.gz
