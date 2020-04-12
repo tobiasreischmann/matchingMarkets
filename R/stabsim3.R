@@ -182,7 +182,8 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
     
     ## Reduce the preference sets of students and colleges
     if (!is.null(s.prefs.count)) {
-      s.prefs[(s.prefs.count+1):nColleges,] <- 0
+      countall <- sum(s.prefs.count)
+      s.prefs[(countall+1):nColleges,] <- 0
       ratedcolleges <- sapply(1:nColleges,function(y) {
           (1:nStudents)[sapply(1:nStudents,function(x) {
             y %in% s.prefs[,x]
@@ -192,7 +193,7 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
         intersect(temp.c.prefs[[y]],ratedcolleges[[y]])
       })
     } else {
-      s.prefs.count <- nColleges
+      s.prefs.count <- rep(1,nColleges)
     }
 
     iterationscount = 0
@@ -208,9 +209,16 @@ stabsim3 <- function(m, nStudents, nColleges=length(nSlots), nSlots,
             return(list())
             break;
           }
-          temp <- match(curr,s.prefs[,y])
-          if (temp < s.prefs.count) {
-            s.prefs[temp:s.prefs.count,y]
+          match <- match(curr,s.prefs[,y])
+          temp <- 0
+          for (i in s.prefs.count) {
+            if (match < (temp + i)) {
+              break;
+            }
+            temp <- temp + i
+          }
+          if (temp < sum(s.prefs.count)) {
+            s.prefs[(temp + 1):sum(s.prefs.count),y]
           } else {
             list()
           }
