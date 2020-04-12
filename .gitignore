@@ -2,3 +2,8 @@
 .Rhistory
 .RData
 *.o
+*.rds
+*.png
+*.pdf
+*.so
+.Rproj
