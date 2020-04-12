@@ -9,11 +9,10 @@
 #
 # ----------------------------------------------------------------------------
 
-#' @title Simulated data for college admissions problem
+#' @title Simulated data for childcare admissions problem using the IDAT
 #'
-#' @description Simulate data for two-sided matching markets. In the simulation for the 
-#' Sorensen (2007) model with one selection equation, an equal sharing rule of 
-#' \eqn{\lambda = 0.5} is used.
+#' @description Simulate data for two-sided matching markets.
+#' For the simulation, the iterative deferred acceptance mechanism with ties is applied.
 #'
 #' @param m integer indicating the number of markets to be simulated.
 #' @param nStudents integer indicating the number of students per market.
@@ -38,13 +37,13 @@
 #' @return
 #' 
 #' @return
-#' \code{stabsim2} returns a list with the following items.
+#' \code{stabsim3} returns a list with the following items.
 #' \item{OUT}{}
 #' \item{SEL}{}
 #' \item{SELc}{}
 #' \item{SELs}{}
 #' 
-#' @author Thilo Klein 
+#' @author Tobias Reischmann
 #' 
 #' @keywords generate
 #' 
@@ -54,7 +53,7 @@
 #' ## (nStudents=10) per market and 3 colleges (nColleges=3) with quotas of
 #' ## 2, 3, and 5 students, respectively.
 #' 
-#' xdata <- stabsim2(m=2, nStudents=10, nSlots=c(2,3,5), verbose=FALSE,
+#' xdata <- stabsim3(m=2, nStudents=10, nSlots=c(2,3,5), verbose=FALSE,
 #'   colleges = "c1", students = "s1",
 #'   outcome = ~ c1:s1 + eta + nu,
 #'   selection = ~ -1 + c1:s1 + eta
